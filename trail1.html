@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sequential Countdown Timers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        input {
+            margin: 5px;
+            padding: 10px;
+        }
+        #timerDisplay {
+            font-size: 2rem;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 1rem;
+        }
+        #messageBox {
+            margin-top: 20px;
+            color: #333;
+        }
+        #onTime {
+            font-family: "Georgia", sans-serif;
+            font-size: 44pt;
+            font-weight: bold;
+            color: blue;
+        }
+        #offTime {
+            font-family: "Verdana", monospace;
+            font-size: 33pt;
+            font-style: italic;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>TODAYS Timer</h1>
+    <input type="number" id="minutes1" placeholder="Minutes for Timer 1" min="0">
+    <input type="number" id="seconds1" placeholder="Seconds for Timer 1" min="0" max="59">
+    <input type="number" id="minutes2" placeholder="Minutes for Timer 2" min="0">
+    <input type="number" id="seconds2" placeholder="Seconds for Timer 2" min="0" max="59">
+    <button onclick="startTimers()">Start Timers</button>
+    <button onclick="resetTimers()">Reset Timers</button>
+    <div id="timerDisplay">00:00</div>
+    <div id="messageBox"></div>
+
+    <div>
+        <input type="file" id="audioFile" accept="audio/*">
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+    <audio id="alarmSound" src="https://www.soundjay.com/button/sounds/beep-07.wav" preload="auto"></audio>
+    <audio id="snoozeSound" src="https://www.soundjay.com/button/sounds/snooze-03.wav" preload="auto"></audio>
+
+    <script>
+        let interval;
+        let currentTimer = 1; // Track the current timer (1 or 2)
+        let totalSeconds;
+        const audioPlayer = document.getElementById('audioPlayer');
+        let isAudioPlaying = false; // Track if audio is currently playing
+
+        // Load the selected audio file into the audio player
+        document.getElementById('audioFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audioPlayer.src = url;
+            }
+        });
+
+        function startTimers() {
+            clearInterval(interval); // Clear any existing interval
+            currentTimer = 1; // Start with Timer 1
+            totalSeconds = getTotalSeconds(currentTimer); // Get the total seconds for the current timer
+            runTimer();
+        }
+
+        function runTimer() {
+            const timerDisplay = document.getElementById('timerDisplay');
+            const messageBox = document.getElementById('messageBox');
+            let timerMessage;
+
+            // Update the message based on the current timer
+            if (currentTimer === 1) {
+                timerMessage = "<span id='onTime'>HEAT IT UP</span>";
+            } else {
+                timerMessage = "<span id='offTime'>COOL DOWN</span>";
+            }
+
+            messageBox.innerHTML = timerMessage; // Update message box
+
+            interval = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(interval);
+                    document.getElementById('alarmSound').play(); // Play sound
+                    timerDisplay.textContent = "Time's up!";
+
+                    // Handle Timer Switching
+                    setTimeout(() => {
+                        if (currentTimer === 1) {
+                            // Start the audio after Timer 1 ends
+                            if (!isAudioPlaying) {
+                                audioPlayer.play();
+                                isAudioPlaying = true; // Mark audio as playing
+                            }
+                        } else {
+                            // Stop the audio before Timer 1 starts again
+                            audioPlayer.pause();
+                            audioPlayer.currentTime = 0; // Reset audio to start
+                            isAudioPlaying = false; // Mark audio as stopped
+                        }
+
+                        // Switch timers
+                        currentTimer = currentTimer === 1 ? 2 : 1; // Switch timers
+                        totalSeconds = getTotalSeconds(currentTimer); // Get new timer duration
+                        runTimer(); // Run the next timer
+                    }, 2000); // 2 seconds delay before starting the next timer
+
+                    return;
+                }
+
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = totalSeconds % 60;
+                timerDisplay.textContent = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                totalSeconds--;
+            }, 1000);
+        }
+
+        function getTotalSeconds(timerNumber) {
+            const minutes = parseInt(document.getElementById(`minutes${timerNumber}`).value) || 0;
+            const seconds = parseInt(document.getElementById(`seconds${timerNumber}`).value) || 0;
+            return minutes * 60 + seconds;
+        }
+
+        function resetTimers() {
+            clearInterval(interval);
+            totalSeconds = 0;
+            document.getElementById('timerDisplay').textContent = "00:00";
+            document.getElementById('messageBox').innerHTML = ""; // Clear message box
+            document.getElementById('minutes1').value = '';
+            document.getElementById('seconds1').value = '';
+            document.getElementById('minutes2').value = '';
+            document.getElementById('seconds2').value = '';
+            audioPlayer.src = ""; // Reset audio player
+            isAudioPlaying = false; // Reset audio playing status
+        }
+    </script>
+</body>
+</html>
